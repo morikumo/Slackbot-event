@@ -19,6 +19,9 @@ Alors le code est séparer en 3 voir 4 grande parties:
   - Routes pour les commandes slash (ex: /learning)
   - Gestion de l'intéractivité
 
+
+
+
 ## Ce qui est fait
 - **Express** : choisi à la place de Bolt parce que Bolt se concentre uniquement sur slack or ici on aura à connecter à d’autres APIs (Google, Notion…).
 - **ngrok** : permet d’exposer ton serveur local en HTTPS pour que Slack puisse l’appeler.(a changer dans le futur c'est une solution pour utilisé nos webhook actuellement)
@@ -29,3 +32,61 @@ Alors le code est séparer en 3 voir 4 grande parties:
 2. Connexion à l’API Google + Notion ✅ priorité  
 3. Statistiques (nombre de learnings, participants, etc.)  
 4. Système de votes pour choisir les prochains sujets 
+
+
+
+
+Etape 2 :
+# Slack Learning Bot — Intégration avec Google Calendar
+
+## Aperçu général
+Le bot Slack permet de planifier automatiquement les **sessions de learning** d’équipe via un simple formulaire Slack.  
+Chaque soumission crée un **événement dans Google Calendar** et un **message récapitulatif** dans un canal Slack dédié. J'ai aussi ajouté un petit makefile pour faciliter l'utilisation du projet (pour le moment).
+
+---
+
+## Stack et architecture
+- **Express.js** → serveur principal (au lieu de Bolt, pour ouvrir vers d’autres API).  
+- **Slack Web API** → gestion des slash commands et modals.  
+- **Google Calendar API (v3)** → création des événements.  
+- **Luxon** → gestion des dates, fuseaux horaires et formatage.
+
+---
+
+## Fonctionnement
+1. L’utilisateur exécute `/learning` sur Slack.  
+2. Le bot ouvre un **modal** demandant :
+   - la personne concernée,  
+   - le nom de la learning,  
+   - la date,  
+   - une description et une ressource (optionnelle).  
+3. À la validation :
+   - Les données sont vérifiées côté serveur.  
+   - Un événement est créé dans **Google Calendar**.  
+   - Un message récapitulatif est posté dans **le canal Slack configuré**.
+
+---
+
+## Intégration Google Calendar
+
+### Étapes de configuration
+1. Créer un **projet Google Cloud** et activer **Google Calendar API**.  
+2. Créer un **compte de service** et générer une **clé JSON**.  
+3. Partager votre calendrier d’équipe avec le **service account**  
+   (droit “Apporter des modifications et gérer le partage”).  
+4. Ajouter les variables suivantes dans `.env` :
+   ```bash
+   GCAL_KEY_FILE=./learning-bot-xxxxx.json
+   GCAL_CALENDAR_ID=xxxxx@group.calendar.google.com
+
+
+A suivre : 
+## Étapes suivantes
+
+### 1. Données et intégrations
+- Compléter et structurer les données (`who`, `what`, `when`, `desc`, `resrc`).
+- Envisager une sauvegarde Notion des learnings (via API) pour consultation et statistiques.
+- Ajouter un **ID interne** par learning pour relier Slack, Calendar et Notion.
+
+### 2. Google Calendar
+- Étendre les permissions pour permettre la création automatique d’un lien Meet

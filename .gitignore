@@ -3,3 +3,4 @@
 /.env
 client_secret_*.json
 learning-bot-*.json
+package-lock.json
