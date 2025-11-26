@@ -201,68 +201,99 @@ app.post("/slack/interactions", verifySlack, async (req, res) => {
       second: 0,
       millisecond: 0,
     });
+    
     //const endAt = startAt.plus({ minutes: 30 }); // Non utilisé mais peut servir si besoin
     
+    // Programme le rappel dans Slack
+    const reminderOffset = { hours: process.env.LEARNING_REMINDER_HOURS, minutes: process.env.LEARNING_REMINDER_MINUTES };
+    const reminderAt = startAt.minus({ hours: reminderOffset.hours, minutes: reminderOffset.minutes });
+    const postAt = Math.floor(reminderAt.toSeconds());
     
-    // Crée l'événement Google Calendar
-    let meetLink = "";
-    try {
-      const event = await createGCalEvent({ what, desc, resrc, startAt });
-      meetLink = event?.hangoutLink || "";
-    } catch (err) {
-      console.error("Erreur GCal:", err?.response?.data || err);
-      await slack.chat.postMessage({
-        channel: payload.user.id,
-        text: "Impossible de créer l'événement Google Calendar.",
-      });
-    }
+    // Un jour avant
+    await slack.chat.scheduleMessage({
+      channel: targetChannel,
+      post_at: postAt,
+      text: `Rappel: la learning qui aura lieu demain portera sur le sujet «${what}».
+      Présentateur: <@${who}>`,
+    });
+
+
+    // Le jour meme
+    const sameDayReminder = startAt.set({
+      hour: 11,
+      minute: 0,
+      second: 0,
+      millisecond: 0,
+    });
     
-    // Message dans le channel Slack
-    const blocks = [
-      { type: "header", text: { type: "plain_text", text: "Nouvelle learning" } },
-      {
-        type: "section",
-        fields: [
-          { type: "mrkdwn", text: `*Présentateur de la learning:*\n<@${who}>` },
-          { type: "mrkdwn", text: `*Date:*\n${when} ${startAt.toFormat("HH:mm")}` },
-          { type: "mrkdwn", text: `*Sujet de la learning:*\n${what}` }
-        ]
-      },
-      ...(desc
-        ? [{ type: "section", text: { type: "mrkdwn", text: `*Description:*\n${desc}` } }]
-        : []),
-        ...(resrc
-          ? [{ type: "section", text: { type: "mrkdwn", text: `*Ressource:*\n${resrc}` } }]
-          : []),
-          ...(meetLink
-            ? [{
-              type: "section",
-              text: { type: "mrkdwn", text: `*Lien Meet:*\n${meetLink}` }
-            }]
-            : []),
-            {
-              type: "context",
-              elements: [{ type: "mrkdwn", text: `Ajouté par <@${payload.user.id}>` }]
-            }
-          ];
-          
-          await createNotionLearning({ // Enregistrement Notion
-            who, what, when, startAt, desc, resrc 
-          });          
-          
-          await slack.chat.postMessage({ // Message Slack une fois tout prêt
-            channel: targetChannel,
-            text: `Learning: ${what}`,
-            blocks,
-          });
-          
-          
-          return;
-        }
-        res.status(200).send();
-      });
+    if (sameDayReminder > DateTime.now()) {
+      const postAtSameDay = Math.floor(sameDayReminder.toSeconds());
+      await slack.chat.scheduleMessage({
+        channel: targetChannel,
+        post_at: postAtSameDay,
+        text: `Rappel: la learning «${what}» commence à ${startAt.toFormat("HH:mm")}.
+    Présentateur: <@${who}>`,
+      });}
       
-      // --- Start server --- On écoute le serveur
-      app.listen(port, () =>
-        console.log(`Listening on http://localhost:${port}`)
-    );
+      // Crée l'événement Google Calendar
+      let meetLink = "";
+      try {
+        const event = await createGCalEvent({ what, desc, resrc, startAt });
+        meetLink = event?.hangoutLink || "";
+      } catch (err) {
+        console.error("Erreur GCal:", err?.response?.data || err);
+        await slack.chat.postMessage({
+          channel: payload.user.id,
+          text: "Impossible de créer l'événement Google Calendar.",
+        });
+      }
+      
+      // Message dans le channel Slack
+      const blocks = [
+        { type: "header", text: { type: "plain_text", text: "Nouvelle learning" } },
+        {
+          type: "section",
+          fields: [
+            { type: "mrkdwn", text: `*Présentateur de la learning:*\n<@${who}>` },
+            { type: "mrkdwn", text: `*Date:*\n${when} ${startAt.toFormat("HH:mm")}` },
+            { type: "mrkdwn", text: `*Sujet de la learning:*\n${what}` }
+          ]
+        },
+        ...(desc
+          ? [{ type: "section", text: { type: "mrkdwn", text: `*Description:*\n${desc}` } }]
+          : []),
+          ...(resrc
+            ? [{ type: "section", text: { type: "mrkdwn", text: `*Ressource:*\n${resrc}` } }]
+            : []),
+            ...(meetLink
+              ? [{
+                type: "section",
+                text: { type: "mrkdwn", text: `*Lien Meet:*\n${meetLink}` }
+              }]
+              : []),
+              {
+                type: "context",
+                elements: [{ type: "mrkdwn", text: `Ajouté par <@${payload.user.id}>` }]
+              }
+            ];
+            
+            await createNotionLearning({ // Enregistrement Notion
+              who, what, when, startAt, desc, resrc 
+            });          
+            
+            await slack.chat.postMessage({ // Message Slack une fois tout prêt
+              channel: targetChannel,
+              text: `Learning: ${what}`,
+              blocks,
+            });
+            
+            
+            return;
+          }
+          res.status(200).send();
+        });
+        
+        // --- Start server --- On écoute le serveur
+        app.listen(port, () =>
+          console.log(`Listening on http://localhost:${port}`)
+      );
