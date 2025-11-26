@@ -3,9 +3,10 @@ import dotenv from "dotenv";
 import getRawBody from "raw-body";
 import crypto from "crypto";
 import { WebClient } from "@slack/web-api";
-import { google } from "googleapis";
-import { GoogleAuth } from "google-auth-library";
 import { DateTime } from "luxon";
+import { createNotionLearning } from "./notion.js";
+import { createGCalEvent } from "./google-calendar.js";
+// --- Load .env ---
 
 dotenv.config();
 
@@ -13,34 +14,6 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 4000;
 const slack = new WebClient(process.env.BOT_USER_TOKEN);
-
-// --- Google Calendar ---
-const gAuth = new GoogleAuth({
-  keyFile: process.env.GCAL_KEY_FILE, // chemin vers le fichier de clé JSON
-  scopes: ["https://www.googleapis.com/auth/calendar"],
-});
-const gcalClientPromise = gAuth.getClient(); // Authentification client Google
-const GCAL_ID = process.env.GCAL_CALENDAR_ID;
-
-// --- Crée un événement Google Calendar ---
-async function createGCalEvent({ what, desc, resrc, startAt }) {
-  const authClient = await gcalClientPromise;
-  const gcal = google.calendar({ version: "v3", auth: authClient });
-  const tz = "Europe/Paris"; // Fuseau horaire
-
-  // Crée l'événement a 14h15 - 14h45 à chaque fois
-  await gcal.events.insert({
-    calendarId: GCAL_ID,
-    requestBody: {
-      summary: what,
-      description: [desc, resrc ? `Ressource: ${resrc}` : ""]
-        .filter(Boolean)
-        .join("\n\n"),
-      start: { dateTime: startAt.toISO(), timeZone: tz },
-      end: { dateTime: startAt.plus({ minutes: 30 }).toISO(), timeZone: tz },
-    },
-  });
-}
 
 // --- Vérification signature Slack --- (middleware) obligatoire pour les routes Slack
 async function verifySlack(req, res, next) {
@@ -54,11 +27,11 @@ async function verifySlack(req, res, next) {
     }
     const base = `v0:${timestamp}:${raw.toString("utf8")}`;
     const mySig =
-      "v0=" +
-      crypto
-        .createHmac("sha256", process.env.SLACK_SIGNING_SECRET)
-        .update(base)
-        .digest("hex");
+    "v0=" +
+    crypto
+    .createHmac("sha256", process.env.SLACK_SIGNING_SECRET)
+    .update(base)
+    .digest("hex");
     if (!crypto.timingSafeEqual(Buffer.from(mySig), Buffer.from(slackSig))) {
       return res.status(401).send("Invalid signature");
     }
@@ -75,14 +48,14 @@ async function verifySlack(req, res, next) {
 app.post("/slack/commands", verifySlack, async (req, res) => {
   try {
     if (req.body.command === "/ping") { // simple test
-      return res.json({ response_type: "ephemeral", text: "pong 🏓" });
+      return res.json({ response_type: "ephemeral", text: "pong" });
     }
-
+    
     // Le gros de notre application
     if (req.body.command === "/learning") {
       const { trigger_id, channel_id } = req.body;
       res.status(200).send();
-
+      
       await slack.views.open({
         trigger_id,
         view: {
@@ -173,7 +146,7 @@ app.post("/slack/commands", verifySlack, async (req, res) => {
       });
       return;
     }
-
+    
     res.status(404).send("Unknown command");
   } catch (err) {
     console.error("commands ERROR:", err?.data || err);
@@ -185,29 +158,29 @@ app.post("/slack/commands", verifySlack, async (req, res) => {
 // Une fois le formulaire soumis, on traite les données
 app.post("/slack/interactions", verifySlack, async (req, res) => {
   const payload = JSON.parse(req.body.payload || "{}");
-
+  
   if (
     payload.type === "view_submission" &&
     payload.view.callback_id === "learning_form"
   ) {
     const pv = payload.view.state.values;
-
+    
     const who = pv["who_block"]["who_input"].selected_user;
     const what = pv["what_block"]["what_input"].value?.trim();
     const when = pv["when_block"]["when_input"].selected_date;
     const desc = pv["desc_block"]["desc_input"].value?.trim();
     const resrc = pv["res_block"]?.["res_input"]?.value?.trim() || "";
-
+    
     const isUrl = (s) => /^https?:\/\/\S+$/i.test(s);
     const errors = {};
     if (!what) errors["what_block"] = "Nom requis";
     if (!when) errors["when_block"] = "Date requise";
     if (resrc && !isUrl(resrc)) errors["res_block"] = "URL invalide";
-
+    
     if (Object.keys(errors).length) {
       return res.json({ response_action: "errors", errors });
     }
-
+    
     const targetChannel = process.env.LEARNING_CHANNEL_ID;
     if (!targetChannel) {
       await slack.chat.postMessage({
@@ -216,24 +189,26 @@ app.post("/slack/interactions", verifySlack, async (req, res) => {
       });
       return res.json({ response_action: "clear" });
     }
-
+    
     // Ferme le modal immédiatement
     res.json({ response_action: "clear" });
-
-   // Heure fixe : 14h15 → 14h45 (30 min)
-const tz = "Europe/Paris";
-const startAt = DateTime.fromISO(when, { zone: tz }).set({
-  hour: 14,
-  minute: 15,
-  second: 0,
-  millisecond: 0,
-});
-const endAt = startAt.plus({ minutes: 30 }); // Non utilisé mais peut servir si besoin
-
-
+    
+    // Heure fixe : 14h15 → 14h45 (30 min)
+    const tz = "Europe/Paris";
+    const startAt = DateTime.fromISO(when, { zone: tz }).set({
+      hour: 14,
+      minute: 15,
+      second: 0,
+      millisecond: 0,
+    });
+    //const endAt = startAt.plus({ minutes: 30 }); // Non utilisé mais peut servir si besoin
+    
+    
     // Crée l'événement Google Calendar
+    let meetLink = "";
     try {
-      await createGCalEvent({ what, desc, resrc, startAt });
+      const event = await createGCalEvent({ what, desc, resrc, startAt });
+      meetLink = event?.hangoutLink || "";
     } catch (err) {
       console.error("Erreur GCal:", err?.response?.data || err);
       await slack.chat.postMessage({
@@ -241,61 +216,53 @@ const endAt = startAt.plus({ minutes: 30 }); // Non utilisé mais peut servir si
         text: "Impossible de créer l'événement Google Calendar.",
       });
     }
-
+    
     // Message dans le channel Slack
-    await slack.chat.postMessage({
-      channel: targetChannel,
-      text: `Learning: ${what}`,
-      blocks: [
-        { type: "header", text: { type: "plain_text", text: "Nouvelle learning" } },
-        {
-          type: "section",
-          fields: [
-            {
-              type: "mrkdwn",
-              text: `*Présentateur de la learning:*\n<@${who}>`,
-            },
-            {
-              type: "mrkdwn",
-              text: `*Date:*\n${when} ${startAt.toFormat("HH:mm")}`,
-            },
-            { type: "mrkdwn", text: `*Sujet de la learning:*\n${what}` },
-          ],
-        },
-        ...(desc
-          ? [
-              {
-                type: "section",
-                text: { type: "mrkdwn", text: `*Description:*\n${desc}` },
-              },
-            ]
-          : []),
+    const blocks = [
+      { type: "header", text: { type: "plain_text", text: "Nouvelle learning" } },
+      {
+        type: "section",
+        fields: [
+          { type: "mrkdwn", text: `*Présentateur de la learning:*\n<@${who}>` },
+          { type: "mrkdwn", text: `*Date:*\n${when} ${startAt.toFormat("HH:mm")}` },
+          { type: "mrkdwn", text: `*Sujet de la learning:*\n${what}` }
+        ]
+      },
+      ...(desc
+        ? [{ type: "section", text: { type: "mrkdwn", text: `*Description:*\n${desc}` } }]
+        : []),
         ...(resrc
-          ? [
-              {
-                type: "section",
-                text: { type: "mrkdwn", text: `*Ressource:*\n${resrc}` },
-              },
-            ]
+          ? [{ type: "section", text: { type: "mrkdwn", text: `*Ressource:*\n${resrc}` } }]
           : []),
-        {
-          type: "context",
-          elements: [
+          ...(meetLink
+            ? [{
+              type: "section",
+              text: { type: "mrkdwn", text: `*Lien Meet:*\n${meetLink}` }
+            }]
+            : []),
             {
-              type: "mrkdwn",
-              text: `Ajouté par <@${payload.user.id}>`,
-            },
-          ],
-        },
-      ],
-    });
-
-    return;
-  }
-  res.status(200).send();
-});
-
-// --- Start server --- On écoute le serveur
-app.listen(port, () =>
-  console.log(`Listening on http://localhost:${port}`)
-);
+              type: "context",
+              elements: [{ type: "mrkdwn", text: `Ajouté par <@${payload.user.id}>` }]
+            }
+          ];
+          
+          await createNotionLearning({ // Enregistrement Notion
+            who, what, when, startAt, desc, resrc 
+          });          
+          
+          await slack.chat.postMessage({ // Message Slack une fois tout prêt
+            channel: targetChannel,
+            text: `Learning: ${what}`,
+            blocks,
+          });
+          
+          
+          return;
+        }
+        res.status(200).send();
+      });
+      
+      // --- Start server --- On écoute le serveur
+      app.listen(port, () =>
+        console.log(`Listening on http://localhost:${port}`)
+    );

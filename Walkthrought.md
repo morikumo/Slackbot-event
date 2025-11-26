@@ -90,3 +90,51 @@ A suivre :
 
 ### 2. Google Calendar
 - Étendre les permissions pour permettre la création automatique d’un lien Meet
+
+# 25 novembre :
+
+
+
+# Learning Bot
+
+## Objectif final
+Construire un flux complet :
+**Slack → Google Calendar → Notion**,  
+avec **rappels automatiques** et bases du **CI/CD**.
+
+---
+
+## Priorités d’ici jeudi
+
+### 1) Slack → Google Calendar
+- Base fonctionnelle pour la démo.
+
+### 2) Ajouter l’intégration Notion
+- Créer une fiche automatiquement à chaque learning.
+- Sert d'historique + début des statistiques.
+
+### 3) Ajouter les rappels Slack automatiques
+- J-1 à 11h  
+- Le jour meme a 11h aussi avant la learning
+
+---
+
+## ⏳ À reporter après jeudi (ou objectif ambitieux)
+
+- Génération automatique du **lien Google Meet** (nécessite OAuth / Workspace).
+- Déploiement complet Docker + Cloud Run.
+- Statistiques avancées.
+
+---
+
+## 🎤 Démo recommandée
+1. `/learning` dans Slack   ✅
+2. Event visible dans Google Calendar  ✅
+3. Fiche générée dans Notion  ✅
+4. Rappel Slack programmé  ⚠️
+
+Ambitieux :
+1. Lien meet avec Oauth 🧠
+2. CI/CD github action (solution a trouver pour ngrok -> Render) 🧠
+
+Un flux propre, clair et impressionnant en peu de temps.
