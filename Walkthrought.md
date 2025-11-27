@@ -131,10 +131,9 @@ avec **rappels automatiques** et bases du **CI/CD**.
 1. `/learning` dans Slack   ✅
 2. Event visible dans Google Calendar  ✅
 3. Fiche générée dans Notion  ✅
-4. Rappel Slack programmé  ⚠️
+4. Rappel Slack programmé  ✅
 
 Ambitieux :
 1. Lien meet avec Oauth 🧠
-2. CI/CD github action (solution a trouver pour ngrok -> Render) 🧠
+2. CI/CD github action (solution a trouver pour ngrok -> Render) ⚠️
 
-Un flux propre, clair et impressionnant en peu de temps.
