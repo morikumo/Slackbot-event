@@ -47,6 +47,7 @@ async function verifySlack(req, res, next) {
 
 // --- Slash commands ---
 app.post("/slack/commands", verifySlack, async (req, res) => {
+   console.log("➡️ Requête Slack reçue");
   try {
     if (req.body.command === "/ping") { // simple test
       return res.json({ response_type: "ephemeral", text: "pong" });
