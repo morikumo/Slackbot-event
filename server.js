@@ -7,9 +7,19 @@ import { DateTime } from "luxon";
 import { createNotionLearning } from "./notion.js";
 import { createGCalEvent } from "./google-calendar.js";
 import { scheduleLearningReminders } from "./reminder.js";
+import { healthRoutes } from "./health.js";
+import { google } from "googleapis";
+
 // --- Load .env ---
 
 dotenv.config();
+
+const oauth2Client = new google.auth.OAuth2(
+  process.env.GCAL_OAUTH_CLIENT_ID,
+  process.env.GCAL_OAUTH_CLIENT_SECRET,
+  process.env.GCAL_OAUTH_REDIRECT_URI
+);
+
 
 // --- Setup Express ---
 const app = express();
@@ -45,9 +55,12 @@ async function verifySlack(req, res, next) {
   }
 }
 
+// --- Health check pour la CI github actions ---
+healthRoutes(app);
+
 // --- Slash commands ---
 app.post("/slack/commands", verifySlack, async (req, res) => {
-   console.log("➡️ Requête Slack reçue");
+  console.log("➡️ Requête Slack reçue");
   try {
     if (req.body.command === "/ping") { // simple test
       return res.json({ response_type: "ephemeral", text: "pong" });
@@ -272,6 +285,27 @@ app.post("/slack/interactions", verifySlack, async (req, res) => {
         }
         res.status(200).send();
       });
+      
+      app.get("/google/oauth/start", (req, res) => {
+        const url = oauth2Client.generateAuthUrl({
+          access_type: "offline",
+          prompt: "consent",
+          scope: ["https://www.googleapis.com/auth/calendar"],
+        });
+        res.redirect(url);
+      });
+      
+      app.get("/google/oauth/callback", async (req, res) => {
+        const code = req.query.code;
+        if (!code) return res.status(400).send("Missing code");
+        
+        const { tokens } = await oauth2Client.getToken(code);
+        
+        // ⚠️ IMPORTANT: copie le refresh_token et mets-le dans Render (Environment)
+        // Ensuite tu peux supprimer/locker cette route.
+        res.send(`<pre>${tokens.refresh_token || "NO_REFRESH_TOKEN_RETURNED"}</pre>`);
+      });
+      
       
       // --- Start server --- On écoute le serveur
       app.listen(port, () =>

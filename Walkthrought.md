@@ -133,8 +133,17 @@ avec **rappels automatiques** et bases du **CI/CD**.
 
 Ambitieux :
 1. Lien meet avec Oauth 🧠
-2. CI/CD github action (solution a trouver pour ngrok -> Render) ⚠️ 🚧
+2. CI/CD github action (solution a trouver pour ngrok -> Render) ⚠️ 🚧 ✅(Render et solution a ngrok)
 3. GEstion de la suppression de l'event (supprimer les rappel et les event Google, slack et Notion) 🧠
 
 
 Contacte Marie pour voir ce qu'elle en pense
+
+Pourquoi Render + Github action :
+
+Github action : CI et test avant déploiment
+
+Render : CD et url publique a utilisé
+
+On a tous simplement utilsé Render pour l'url publique surtout. CAr github ne le fait pas. Facilité la tache aussi les job github peuvent etre verbeux. Et enfin pas besoin d'aucun YAML pour Render, ça va vite.
+
