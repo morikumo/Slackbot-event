@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Start server
+        env:
+          PORT: 4000
+          SLACK_SIGNING_SECRET: "dummy"
+          BOT_USER_TOKEN: "xoxb-dummy"
+        run: |
+          node server.js > server.log 2>&1 &
+          echo $! > server.pid
+
+      - name: Healthcheck # On check la santé du workflow si ça ne marche pas rdv server.log
+        run: |
+          for i in {1..20}; do
+            if curl -fsS http://localhost:4000/health > /dev/null; then
+              echo "Health OK"
+              exit 0
+            fi
+            sleep 1
+          done
+
+          echo "Healthcheck failed. Logs:"
+          cat server.log
+          exit 1
+
+      - name: Stop server 
+        if: always()
+        run: |
+          kill $(cat server.pid) || true
