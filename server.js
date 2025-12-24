@@ -306,6 +306,21 @@ app.post("/slack/interactions", verifySlack, async (req, res) => {
         res.send(`<pre>${tokens.refresh_token || "NO_REFRESH_TOKEN_RETURNED"}</pre>`);
       });
       
+      app.get("/debug/gcal", async (req, res) => {
+        try {
+          const startAt = DateTime.now().setZone("Europe/Paris").plus({ minutes: 10 });
+          const ev = await createGCalEvent({
+            what: "Test Meet OAuth",
+            desc: "Test",
+            resrc: "",
+            startAt,
+          });
+          res.json({ ok: true, hangoutLink: ev?.hangoutLink, htmlLink: ev?.htmlLink });
+        } catch (e) {
+          res.status(500).json({ ok: false, error: String(e?.message || e), body: e?.response?.data });
+        }
+      });
+      
       
       // --- Start server --- On écoute le serveur
       app.listen(port, () =>
