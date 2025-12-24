@@ -306,20 +306,17 @@ app.post("/slack/interactions", verifySlack, async (req, res) => {
         res.send(`<pre>${tokens.refresh_token || "NO_REFRESH_TOKEN_RETURNED"}</pre>`);
       });
       
-      app.get("/debug/gcal", async (req, res) => {
-        try {
-          const startAt = DateTime.now().setZone("Europe/Paris").plus({ minutes: 10 });
-          const ev = await createGCalEvent({
-            what: "Test Meet OAuth",
-            desc: "Test",
-            resrc: "",
-            startAt,
-          });
-          res.json({ ok: true, hangoutLink: ev?.hangoutLink, htmlLink: ev?.htmlLink });
-        } catch (e) {
-          res.status(500).json({ ok: false, error: String(e?.message || e), body: e?.response?.data });
-        }
+      app.get("/debug/env", (req, res) => {
+        res.json({
+          hasClientId: Boolean(process.env.GCAL_OAUTH_CLIENT_ID),
+          hasClientSecret: Boolean(process.env.GCAL_OAUTH_CLIENT_SECRET),
+          redirectUri: process.env.GCAL_OAUTH_REDIRECT_URI || null,
+          hasRefreshToken: Boolean(process.env.GCAL_REFRESH_TOKEN),
+          refreshLen: (process.env.GCAL_REFRESH_TOKEN || "").length,
+          calendarId: process.env.GCAL_CALENDAR_ID || null,
+        });
       });
+      
       
       
       // --- Start server --- On écoute le serveur
