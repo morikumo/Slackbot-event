@@ -312,7 +312,7 @@ app.post("/slack/interactions", verifySlack, async (req, res) => {
           hasClientSecret: Boolean(process.env.GCAL_OAUTH_CLIENT_SECRET),
           redirectUri: process.env.GCAL_OAUTH_REDIRECT_URI || null,
           hasRefreshToken: Boolean(process.env.GCAL_REFRESH_TOKEN),
-          refreshLen: (process.env.GCAL_REFRESH_TOKEN || "").length,
+          refreshLen: (process.env.GCAL_OAUTH_REFRESH_TOKEN || "").length,
           calendarId: process.env.GCAL_CALENDAR_ID || null,
         });
       });
