@@ -286,6 +286,9 @@ app.post("/slack/interactions", verifySlack, async (req, res) => {
         res.status(200).send();
       });
       
+
+
+      // --- Functional test part ---
       app.get("/google/oauth/start", (req, res) => {
         const url = oauth2Client.generateAuthUrl({
           access_type: "offline",
@@ -302,7 +305,6 @@ app.post("/slack/interactions", verifySlack, async (req, res) => {
         const { tokens } = await oauth2Client.getToken(code);
         
         // ⚠️ IMPORTANT: copie le refresh_token et mets-le dans Render (Environment)
-        // Ensuite tu peux supprimer/locker cette route.
         res.send(`<pre>${tokens.refresh_token || "NO_REFRESH_TOKEN_RETURNED"}</pre>`);
       });
       

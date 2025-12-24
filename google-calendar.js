@@ -11,7 +11,7 @@ export async function createGCalEvent({ what, desc, resrc, startAt }) {
   );
 
   oauth2Client.setCredentials({
-    refresh_token: process.env.GCAL_REFRESH_TOKEN,
+    refresh_token: process.env.GCAL_OAUTH_REFRESH_TOKEN,
   });
 
   const gcal = google.calendar({ version: "v3", auth: oauth2Client });
