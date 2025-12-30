@@ -286,8 +286,8 @@ app.post("/slack/interactions", verifySlack, async (req, res) => {
         res.status(200).send();
       });
       
-
-
+      
+      
       // --- Functional test part ---
       app.get("/google/oauth/start", (req, res) => {
         const url = oauth2Client.generateAuthUrl({
@@ -319,6 +319,82 @@ app.post("/slack/interactions", verifySlack, async (req, res) => {
         });
       });
       
+      app.get("/debug/status", requireAdmin, async (req, res) => {
+        const now = new Date().toISOString();
+        
+        const env = {
+          slack: {
+            hasBotToken: Boolean(process.env.BOT_USER_TOKEN),
+            hasSigningSecret: Boolean(process.env.SLACK_SIGNING_SECRET),
+            learningChannel: Boolean(process.env.LEARNING_CHANNEL_ID),
+          },
+          notion: {
+            hasApiKey: Boolean(process.env.NOTION_API_KEY),
+            hasDbId: Boolean(process.env.NOTION_DATABASE_ID || process.env.NOTION_PARENT_PAGE_ID),
+          },
+          gcal: {
+            hasClientId: Boolean(process.env.GCAL_OAUTH_CLIENT_ID),
+            hasClientSecret: Boolean(process.env.GCAL_OAUTH_CLIENT_SECRET),
+            hasRedirectUri: Boolean(process.env.GCAL_OAUTH_REDIRECT_URI),
+            hasRefreshToken: Boolean(process.env.GCAL_REFRESH_TOKEN),
+            calendarId: process.env.GCAL_CALENDAR_ID ? "set" : "missing",
+          },
+        };
+        
+        // Ping Google OAuth (sans créer d’event) -> rapide et safe
+        let gcalPing = { ok: null, error: null };
+        try {
+          const { google } = await import("googleapis");
+          const oauth2Client = new google.auth.OAuth2(
+            process.env.GCAL_OAUTH_CLIENT_ID,
+            process.env.GCAL_OAUTH_CLIENT_SECRET,
+            process.env.GCAL_OAUTH_REDIRECT_URI
+          );
+          oauth2Client.setCredentials({ refresh_token: process.env.GCAL_REFRESH_TOKEN });
+          await oauth2Client.getAccessToken(); // ← détecte invalid_grant direct
+          gcalPing.ok = true;
+        } catch (e) {
+          gcalPing.ok = false;
+          gcalPing.error = e?.response?.data || e?.message || String(e);
+        }
+        
+        // (Optionnel) ping Notion léger (sans écrire) : récupérer la DB
+        let notionPing = { ok: null, error: null };
+        try {
+          const { Client } = await import("@notionhq/client");
+          const notion = new Client({ auth: process.env.NOTION_API_KEY });
+          const dbId = process.env.NOTION_DATABASE_ID || process.env.NOTION_PARENT_PAGE_ID;
+          if (!dbId) throw new Error("Missing Notion DB ID");
+          await notion.databases.retrieve({ database_id: dbId });
+          notionPing.ok = true;
+        } catch (e) {
+          notionPing.ok = false;
+          notionPing.error = e?.body || e?.message || String(e);
+        }
+        
+        // Slack ping léger : auth.test
+        let slackPing = { ok: null, error: null };
+        try {
+          const { WebClient } = await import("@slack/web-api");
+          const slack = new WebClient(process.env.BOT_USER_TOKEN);
+          await slack.auth.test();
+          slackPing.ok = true;
+        } catch (e) {
+          slackPing.ok = false;
+          slackPing.error = e?.data || e?.message || String(e);
+        }
+        
+        res.json({
+          at: now,
+          env,
+          ping: {
+            slack: slackPing,
+            notion: notionPing,
+            gcal: gcalPing,
+          },
+          lastKnown: healthState,
+        });
+      });
       
       
       // --- Start server --- On écoute le serveur
