@@ -9,6 +9,7 @@ import { createGCalEvent } from "./google-calendar.js";
 import { scheduleLearningReminders } from "./reminder.js";
 import { healthRoutes } from "./health.js";
 import { google } from "googleapis";
+import { registerDebugRoutes } from "./debugRoutes.js";
 
 // --- Load .env ---
 
@@ -285,6 +286,12 @@ app.post("/slack/interactions", verifySlack, async (req, res) => {
         }
         res.status(200).send();
       });
+      
+// --- Debug routes (optionnel) ---
+      if (process.env.ENABLE_DEBUG_ROUTES === "true") {
+        registerDebugRoutes(app);
+      }
+      
       
       // --- Start server --- On écoute le serveur
       app.listen(port, () =>
