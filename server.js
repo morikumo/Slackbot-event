@@ -27,6 +27,11 @@ const app = express();
 const port = process.env.PORT || 4000;
 const slack = new WebClient(process.env.BOT_USER_TOKEN);
 
+// --- Debug routes (optionnel) ---
+if (process.env.ENABLE_DEBUG_ROUTES === "true") {
+  registerDebugRoutes(app);
+}
+
 // --- Vérification signature Slack --- (middleware) obligatoire pour les routes Slack
 async function verifySlack(req, res, next) {
   try {
@@ -286,11 +291,6 @@ app.post("/slack/interactions", verifySlack, async (req, res) => {
         }
         res.status(200).send();
       });
-      
-// --- Debug routes (optionnel) ---
-      if (process.env.ENABLE_DEBUG_ROUTES === "true") {
-        registerDebugRoutes(app);
-      }
       
       
       // --- Start server --- On écoute le serveur
