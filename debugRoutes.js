@@ -72,7 +72,7 @@ export function registerDebugRoutes(app) {
   });
 }
 
-
+/**
 
 app.get("/debug/env", (req, res) => {
     res.json({
@@ -105,3 +105,4 @@ app.get("/google/oauth/callback", async (req, res) => {
     // ⚠️ IMPORTANT: copie le refresh_token et mets-le dans Render (Environment)
     res.send(`<pre>${tokens.refresh_token || "NO_REFRESH_TOKEN_RETURNED"}</pre>`);
 });
+ */
