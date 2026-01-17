@@ -234,10 +234,26 @@ app.post("/slack/interactions", verifySlack, async (req, res) => {
     });
     
     
+    // Fetch Slack user info for the person who submitted the form
+    let slackUser = { id: payload.user.id, name: payload.user.username };
+    try {
+      const userInfo = await slack.users.info({ user: payload.user.id });
+      if (userInfo.ok && userInfo.user) {
+        slackUser = {
+          id: userInfo.user.id,
+          name: userInfo.user.name,
+          realName: userInfo.user.real_name,
+          email: userInfo.user.profile?.email,
+        };
+      }
+    } catch (err) {
+      console.error("Erreur récupération user Slack:", err);
+    }
+
     // Crée l'événement Google Calendar
     let meetLink = "";
     try {
-      const event = await createGCalEvent({ what, desc, resrc, startAt });
+      const event = await createGCalEvent({ what, desc, resrc, startAt, slackUser });
       meetLink = event?.hangoutLink || "";
     } catch (err) {
       console.error("Erreur GCal:", err?.response?.data || err);
