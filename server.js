@@ -224,7 +224,7 @@ app.post("/slack/interactions", verifySlack, async (req, res) => {
     });
     
     //const endAt = startAt.plus({ minutes: 30 }); // Non utilisé mais peut servir si besoin
-    
+    /*
     await scheduleLearningReminders({
       startAt,
       what,
@@ -232,7 +232,7 @@ app.post("/slack/interactions", verifySlack, async (req, res) => {
       targetChannel,
       slack
     });
-    
+    */
     
     // Fetch Slack user info for the person who submitted the form
     let slackUser = { id: payload.user.id, name: payload.user.username };

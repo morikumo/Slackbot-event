@@ -72,37 +72,22 @@ export function registerDebugRoutes(app) {
   });
 }
 
-/**
+/* LA COMMANDE CURL POUR TESTER
 
-app.get("/debug/env", (req, res) => {
-    res.json({
-        hasClientId: Boolean(process.env.GCAL_OAUTH_CLIENT_ID),
-        hasClientSecret: Boolean(process.env.GCAL_OAUTH_CLIENT_SECRET),
-        redirectUri: process.env.GCAL_OAUTH_REDIRECT_URI || null,
-        hasRefreshToken: Boolean(process.env.GCAL_OAUTH_REFRESH_TOKEN),
-        refreshLen: (process.env.GCAL_OAUTH_REFRESH_TOKEN || "").length,
-        calendarId: process.env.GCAL_CALENDAR_ID || null,
-    });
-});
+curl -H "x-admin-token: un_token_long_random" \
+  https://slackbot-event.onrender.com/debug/status
 
 
-// --- Functional test part ---
-app.get("/google/oauth/start", (req, res) => {
-    const url = oauth2Client.generateAuthUrl({
-        access_type: "offline",
-        prompt: "consent",
-        scope: ["https://www.googleapis.com/auth/calendar"],
-    });
-    res.redirect(url);
-});
+Sinon directement sur navigateur (Mozilla) :
+https://slackbot-event.onrender.com/debug/status
 
-app.get("/google/oauth/callback", async (req, res) => {
-    const code = req.query.code;
-    if (!code) return res.status(400).send("Missing code");
-    
-    const { tokens } = await oauth2Client.getToken(code);
-    
-    // ⚠️ IMPORTANT: copie le refresh_token et mets-le dans Render (Environment)
-    res.send(`<pre>${tokens.refresh_token || "NO_REFRESH_TOKEN_RETURNED"}</pre>`);
-});
- */
+Inspecteur -> Network -> Cliquer sur la requete (Forbidden)
+Vous verrez la possibilité de renvoyer, cliquez dessus.
+Une liste de header (en-tetes) sera afficher, ajoutez-y votre entete, ici :
+- En tete : x-admin-token 
+- Value : un_token_long_random
+
+Lancer la requete et regarder la réponse.
+
+N'oubliez pas que c'est plus simple via curl
+*/

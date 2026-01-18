@@ -132,9 +132,9 @@ avec **rappels automatiques** et bases du **CI/CD**.
 4. Rappel Slack programmé  ✅
 
 Ambitieux :
-1. Lien meet avec Oauth 🧠
+1. Lien meet avec Oauth ✅
 2. CI/CD github action (solution a trouver pour ngrok -> Render) ⚠️ 🚧 ✅(Render et solution a ngrok)
-3. GEstion de la suppression de l'event (supprimer les rappel et les event Google, slack et Notion) 🧠
+3. Gestion de la suppression de l'event (supprimer les rappel et les event Google, slack et Notion) 🧠
 
 
 Contacte Marie pour voir ce qu'elle en pense
@@ -147,3 +147,25 @@ Render : CD et url publique a utilisé
 
 On a tous simplement utilsé Render pour l'url publique surtout. CAr github ne le fait pas. Facilité la tache aussi les job github peuvent etre verbeux. Et enfin pas besoin d'aucun YAML pour Render, ça va vite.
 
+
+-- 30/12/2025 --
+Les liens meet on été mis en places, reste a voir les limites de celui pour ne pas causer de problème.
+
+Mais avant tout je mets en place des routes de debug pour assurer la santé du projet.
+
+Ce qui as ete mis en place:
+
+- Middlaware pour verifier la présence de token pour lancer la route (ou non) -- admin.js
+- Un fichier debug routes, pour un debug complet -- debugRoutes.js
+
+Pistes à observer :
+- 1) Faires des learning avec des comptes qui ne sont pas de googles
+- 2) Faires des learning le meme jour que certaines autre
+- 3) Voir si c'est possible de éditer/supprimer le liens meet, meme si ce n'est pas la personne qui a fait la learning
+- 4) Si édition il y a, est-ce que le lien meet change, meme si on ne touche pas au lien meet
+
+1) ✅
+   Premier test avec le compte de l'appli learning, la learning est bien faite mais ne genere pas de lien meet.
+   Avec autre compte Google meme fonctionnement que le précedent, ce qui peut etre facheux car il faudrait que je puisse le faire via tout les comptes googles.
+
+2) 
