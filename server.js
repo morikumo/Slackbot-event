@@ -9,7 +9,6 @@ import { createGCalEvent } from "./google-calendar.js";
 import { scheduleLearningReminders } from "./reminder.js";
 import { google } from "googleapis";
 import { registerDebugRoutes } from "./debugRoutes.js";
-import { registerLearningListCommand } from "./edit.js"
 
 // --- Load .env ---
 
