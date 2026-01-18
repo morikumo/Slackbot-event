@@ -7,7 +7,6 @@ import { DateTime } from "luxon";
 import { createNotionLearning } from "./notion.js";
 import { createGCalEvent } from "./google-calendar.js";
 import { scheduleLearningReminders } from "./reminder.js";
-import { healthRoutes } from "./health.js";
 import { google } from "googleapis";
 import { registerDebugRoutes } from "./debugRoutes.js";
 
@@ -61,8 +60,6 @@ async function verifySlack(req, res, next) {
   }
 }
 
-// --- Health check pour la CI github actions ---
-healthRoutes(app);
 
 // --- Slash commands ---
 app.post("/slack/commands", verifySlack, async (req, res) => {
