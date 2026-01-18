@@ -9,6 +9,7 @@ import { createGCalEvent } from "./google-calendar.js";
 import { scheduleLearningReminders } from "./reminder.js";
 import { google } from "googleapis";
 import { registerDebugRoutes } from "./debugRoutes.js";
+import { registerLearningListCommand } from "./edit.js"
 
 // --- Load .env ---
 
@@ -165,6 +166,56 @@ app.post("/slack/commands", verifySlack, async (req, res) => {
       return;
     }
     
+    // --- /learning-list (Slack only) ---
+    app.command("/learning-list", async ({ ack, body, client }) => {
+      await ack();
+      
+      const botUserId = process.env.SLACK_BOT_USER_ID; // mets-le dans ton .env
+      const channelId = body.channel_id;
+      
+      try {
+        const res = await client.conversations.history({
+          channel: channelId,
+          limit: 50,
+        });
+        
+        const events = (res.messages || [])
+        .filter(
+          (msg) =>
+            msg.user === botUserId &&
+          msg.text &&
+          msg.text.includes("[LEARNING]")
+        )
+        .map((msg) => ({ ts: msg.ts, text: msg.text }));
+        
+        if (events.length === 0) {
+          await client.chat.postEphemeral({
+            channel: channelId,
+            user: body.user_id,
+            text: "Aucun event Learning trouvé (Slack only).",
+          });
+          return;
+        }
+        
+        const text = events
+        .map((e, i) => `*${i + 1}.* ${e.text.split("\n")[0]} (ts: ${e.ts})`)
+        .join("\n");
+        
+        await client.chat.postEphemeral({
+          channel: channelId,
+          user: body.user_id,
+          text: `📚 *Learning events (Slack only)*\n\n${text}`,
+        });
+      } catch (err) {
+        await client.chat.postEphemeral({
+          channel: channelId,
+          user: body.user_id,
+          text: `❌ Erreur: ${err.message}`,
+        });
+      }
+    });
+    
+    
     res.status(404).send("Unknown command");
   } catch (err) {
     console.error("commands ERROR:", err?.data || err);
@@ -223,11 +274,11 @@ app.post("/slack/interactions", verifySlack, async (req, res) => {
     //const endAt = startAt.plus({ minutes: 30 }); // Non utilisé mais peut servir si besoin
     /*
     await scheduleLearningReminders({
-      startAt,
-      what,
-      who,
-      targetChannel,
-      slack
+    startAt,
+    what,
+    who,
+    targetChannel,
+    slack
     });
     */
     
@@ -246,7 +297,7 @@ app.post("/slack/interactions", verifySlack, async (req, res) => {
     } catch (err) {
       console.error("Erreur récupération user Slack:", err);
     }
-
+    
     // Crée l'événement Google Calendar
     let meetLink = "";
     try {
